@@ -116,6 +116,8 @@ function MediaPlayer() {
         adapter = null;
         Events.extend(MediaPlayerEvents);
         mediaPlayerModel = MediaPlayerModel(context).getInstance();
+        if (window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.dashjs_message)
+            window.hola_cdn.api.dashjs_message(instance);
     }
 
     /**

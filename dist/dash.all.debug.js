@@ -9365,6 +9365,7 @@ function MediaPlayer() {
         adapter = null;
         _coreEventsEventsJs2['default'].extend(_MediaPlayerEventsJs2['default']);
         mediaPlayerModel = (0, _modelsMediaPlayerModelJs2['default'])(context).getInstance();
+        if (window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.dashjs_message) window.hola_cdn.api.dashjs_message(instance);
     }
 
     /**
