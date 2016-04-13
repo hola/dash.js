@@ -9111,6 +9111,7 @@ function MediaPlayer() {
         playbackController = undefined,
         dashMetrics = undefined,
         dashManifestModel = undefined,
+        manifestModel = undefined,
         videoModel = undefined,
         textSourceBuffer = undefined;
 
@@ -9161,6 +9162,7 @@ function MediaPlayer() {
         playbackController = (0, _controllersPlaybackControllerJs2['default'])(context).getInstance();
         mediaController = (0, _controllersMediaControllerJs2['default'])(context).getInstance();
         mediaController.initialize();
+        manifestModel = (0, _modelsManifestModelJs2['default'])(context).getInstance();
         dashManifestModel = (0, _dashModelsDashManifestModelJs2['default'])(context).getInstance();
         dashMetrics = (0, _dashDashMetricsJs2['default'])(context).getInstance();
         metricsModel = (0, _modelsMetricsModelJs2['default'])(context).getInstance();
@@ -10735,7 +10737,7 @@ function MediaPlayer() {
         streamController.setConfig({
             capabilities: capabilities,
             manifestLoader: createManifestLoader(),
-            manifestModel: (0, _modelsManifestModelJs2['default'])(context).getInstance(),
+            manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
             protectionController: protectionController,
             adapter: adapter,
@@ -10853,6 +10855,34 @@ function MediaPlayer() {
         return streamInfo ? streamController.getStreamById(streamInfo.id) : null;
     }
 
+    function getRepresentationListForActiveAdaptations() {
+        if (!playbackInitialized) {
+            throw PLAYBACK_NOT_INITIALIZED_ERROR;
+        }
+        var manifest = manifestModel.getValue();
+        var s_info = streamController.getActiveStreamInfo();
+        var p_idx = s_info.id;
+        var periods = dashManifestModel.getRegularPeriods(manifest, dashManifestModel.getMpd(manifest));
+        var adapts = [];
+        var res = [];
+        streamController.getStreamById(p_idx).getProcessors().forEach(function (proc) {
+            var m_info = proc.getMediaInfo();
+            var a_idx = m_info.index;
+            var adapt = dashManifestModel.getAdaptationForIndex(a_idx, manifest, p_idx);
+            var adapt_s = { period: periods[p_idx], index: a_idx, proc: proc,
+                type: dashManifestModel.getIsMuxed(adapt) ? 'muxed' : dashManifestModel.getIsVideo(adapt) ? 'video' : 'other' };
+            adapts.push(adapt_s);
+        });
+        adapts.forEach(function (adapt) {
+            var rs = dashManifestModel.getRepresentationsForAdaptation(manifest, adapt);
+            rs.forEach(function (repr) {
+                adapt.proc.getIndexHandler().updateRepresentation(repr);
+                res.push(repr);
+            });
+        });
+        return res;
+    }
+
     function initializePlayback() {
         if (!playbackInitialized) {
             playbackInitialized = true;
@@ -10965,6 +10995,7 @@ function MediaPlayer() {
         displayCaptionsOnTop: displayCaptionsOnTop,
         attachVideoContainer: attachVideoContainer,
         attachTTMLRenderingDiv: attachTTMLRenderingDiv,
+        getRepresentationListForActiveAdaptations: getRepresentationListForActiveAdaptations,
         reset: reset
     };
 

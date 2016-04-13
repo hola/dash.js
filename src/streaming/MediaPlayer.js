@@ -104,6 +104,7 @@ function MediaPlayer() {
         playbackController,
         dashMetrics,
         dashManifestModel,
+        manifestModel,
         videoModel,
         textSourceBuffer;
 
@@ -155,6 +156,7 @@ function MediaPlayer() {
         playbackController = PlaybackController(context).getInstance();
         mediaController = MediaController(context).getInstance();
         mediaController.initialize();
+        manifestModel = ManifestModel(context).getInstance();
         dashManifestModel = DashManifestModel(context).getInstance();
         dashMetrics = DashMetrics(context).getInstance();
         metricsModel = MetricsModel(context).getInstance();
@@ -1741,7 +1743,7 @@ function MediaPlayer() {
         streamController.setConfig({
             capabilities: capabilities,
             manifestLoader: createManifestLoader(),
-            manifestModel: ManifestModel(context).getInstance(),
+            manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
             protectionController: protectionController,
             adapter: adapter,
@@ -1858,6 +1860,35 @@ function MediaPlayer() {
         return streamInfo ? streamController.getStreamById(streamInfo.id) : null;
     }
 
+    function getRepresentationListForActiveAdaptations() {
+        if (!playbackInitialized) {
+            throw PLAYBACK_NOT_INITIALIZED_ERROR;
+        }
+        var manifest = manifestModel.getValue();
+        var s_info = streamController.getActiveStreamInfo();
+        var p_idx = s_info.id;
+        var periods = dashManifestModel.getRegularPeriods(manifest, dashManifestModel.getMpd(manifest));
+        var adapts = [];
+        var res = [];
+        streamController.getStreamById(p_idx).getProcessors().forEach(function (proc) {
+            var m_info = proc.getMediaInfo();
+            var a_idx = m_info.index;
+            var adapt = dashManifestModel.getAdaptationForIndex(a_idx, manifest, p_idx);
+            var adapt_s = {period: periods[p_idx], index: a_idx, proc: proc,
+                type: dashManifestModel.getIsMuxed(adapt) ? 'muxed' :
+                (dashManifestModel.getIsVideo(adapt) ? 'video' : 'other')};
+            adapts.push(adapt_s);
+        });
+        adapts.forEach(function (adapt) {
+            var rs = dashManifestModel.getRepresentationsForAdaptation(manifest, adapt);
+            rs.forEach(function (repr) {
+                adapt.proc.getIndexHandler().updateRepresentation(repr);
+                res.push(repr);
+            });
+        });
+        return res;
+    }
+
     function initializePlayback() {
         if (!playbackInitialized) {
             playbackInitialized = true;
@@ -1970,6 +2001,7 @@ function MediaPlayer() {
         displayCaptionsOnTop: displayCaptionsOnTop,
         attachVideoContainer: attachVideoContainer,
         attachTTMLRenderingDiv: attachTTMLRenderingDiv,
+        getRepresentationListForActiveAdaptations: getRepresentationListForActiveAdaptations,
         reset: reset
     };
 
