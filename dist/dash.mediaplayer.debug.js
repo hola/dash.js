@@ -10861,11 +10861,11 @@ function MediaPlayer() {
         }
         var manifest = manifestModel.getValue();
         var s_info = streamController.getActiveStreamInfo();
-        var p_idx = s_info.id;
+        var p_idx = s_info.index;
         var periods = dashManifestModel.getRegularPeriods(manifest, dashManifestModel.getMpd(manifest));
         var adapts = [];
         var res = [];
-        streamController.getStreamById(p_idx).getProcessors().forEach(function (proc) {
+        streamController.getStreamById(s_info.id).getProcessors().forEach(function (proc) {
             var m_info = proc.getMediaInfo();
             var a_idx = m_info.index;
             var adapt = dashManifestModel.getAdaptationForIndex(a_idx, manifest, p_idx);
