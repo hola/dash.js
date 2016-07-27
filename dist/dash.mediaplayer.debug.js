@@ -4998,7 +4998,7 @@ function SegmentBaseLoader() {
         var needFailureReport = true;
         var initRange = null;
         var isoFile = null;
-        var request = new XMLHttpRequest();
+        var request = window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.new_http_request && window.hola_cdn.api.new_http_request({}) || new XMLHttpRequest();
         var baseUrl = baseURLController.resolve(representation.path);
         var info = loadingInfo || {
             url: baseUrl ? baseUrl.url : undefined,
@@ -5056,7 +5056,7 @@ function SegmentBaseLoader() {
         var isoFile = null;
         var sidx = null;
         var hasRange = !!range;
-        var request = new XMLHttpRequest();
+        var request = window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.new_http_request && window.hola_cdn.api.new_http_request({}) || new XMLHttpRequest();
         var baseUrl = baseURLController.resolve(representation.path);
         var info = {
             url: baseUrl ? baseUrl.url : undefined,
@@ -10855,7 +10855,7 @@ function MediaPlayer() {
         return streamInfo ? streamController.getStreamById(streamInfo.id) : null;
     }
 
-    function getRepresentationListForActiveAdaptations() {
+    function getRepresentationListForActiveAdaptations(skipUpdate) {
         if (!playbackInitialized) {
             throw PLAYBACK_NOT_INITIALIZED_ERROR;
         }
@@ -10876,7 +10876,7 @@ function MediaPlayer() {
         adapts.forEach(function (adapt) {
             var rs = dashManifestModel.getRepresentationsForAdaptation(manifest, adapt);
             rs.forEach(function (repr) {
-                adapt.proc.getIndexHandler().updateRepresentation(repr);
+                if (!skipUpdate) adapt.proc.getIndexHandler().updateRepresentation(repr);
                 res.push(repr);
             });
         });
