@@ -3801,7 +3801,7 @@ function DashHandler(config) {
         return representation;
     }
 
-    function updateRepresentation(representation, keepIdx) {
+    function updateRepresentation(representation, keepIdx, skipLoad) {
         var hasInitialization = representation.initialization;
         var hasSegments = representation.segmentInfoType !== 'BaseURL' && representation.segmentInfoType !== 'SegmentBase';
         var error;
@@ -3825,11 +3825,11 @@ function DashHandler(config) {
             updateSegmentList(representation);
         }
 
-        if (!hasInitialization) {
+        if (!hasInitialization && !skipLoad) {
             segmentBaseLoader.loadInitialization(representation);
         }
 
-        if (!hasSegments) {
+        if (!hasSegments && !skipLoad) {
             segmentBaseLoader.loadSegments(representation, type, representation.indexRange);
         }
 
@@ -10855,7 +10855,7 @@ function MediaPlayer() {
         return streamInfo ? streamController.getStreamById(streamInfo.id) : null;
     }
 
-    function getRepresentationListForActiveAdaptations(skipUpdate) {
+    function getRepresentationListForActiveAdaptations(skipLoad) {
         if (!playbackInitialized) {
             throw PLAYBACK_NOT_INITIALIZED_ERROR;
         }
@@ -10876,7 +10876,7 @@ function MediaPlayer() {
         adapts.forEach(function (adapt) {
             var rs = dashManifestModel.getRepresentationsForAdaptation(manifest, adapt);
             rs.forEach(function (repr) {
-                if (!skipUpdate) adapt.proc.getIndexHandler().updateRepresentation(repr);
+                adapt.proc.getIndexHandler().updateRepresentation(repr, false, skipLoad);
                 res.push(repr);
             });
         });
