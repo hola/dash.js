@@ -243,7 +243,7 @@ function DashHandler(config) {
         return representation;
     }
 
-    function updateRepresentation(representation, keepIdx) {
+    function updateRepresentation(representation, keepIdx, skipLoad) {
         var hasInitialization = representation.initialization;
         var hasSegments = representation.segmentInfoType !== 'BaseURL' && representation.segmentInfoType !== 'SegmentBase';
         var error;
@@ -267,11 +267,11 @@ function DashHandler(config) {
             updateSegmentList(representation);
         }
 
-        if (!hasInitialization) {
+        if (!hasInitialization && !skipLoad) {
             segmentBaseLoader.loadInitialization(representation);
         }
 
-        if (!hasSegments) {
+        if (!hasSegments && !skipLoad) {
             segmentBaseLoader.loadSegments(representation, type, representation.indexRange);
         }
 

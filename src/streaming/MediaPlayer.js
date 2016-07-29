@@ -1860,7 +1860,7 @@ function MediaPlayer() {
         return streamInfo ? streamController.getStreamById(streamInfo.id) : null;
     }
 
-    function getRepresentationListForActiveAdaptations(skipUpdate) {
+    function getRepresentationListForActiveAdaptations(skipLoad) {
         if (!playbackInitialized) {
             throw PLAYBACK_NOT_INITIALIZED_ERROR;
         }
@@ -1882,8 +1882,7 @@ function MediaPlayer() {
         adapts.forEach(function (adapt) {
             var rs = dashManifestModel.getRepresentationsForAdaptation(manifest, adapt);
             rs.forEach(function (repr) {
-                if (!skipUpdate)
-                    adapt.proc.getIndexHandler().updateRepresentation(repr);
+                adapt.proc.getIndexHandler().updateRepresentation(repr, false, skipLoad);
                 res.push(repr);
             });
         });
