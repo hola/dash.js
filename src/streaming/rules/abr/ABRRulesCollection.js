@@ -45,6 +45,7 @@ const ABANDON_FRAGMENT_RULES = 'abandonFragmentRules';
 function ABRRulesCollection() {
 
     let context = this.context;
+    let isWebOS = !!window.PalmSystem;
 
     let instance,
         qualitySwitchRules,
@@ -58,7 +59,7 @@ function ABRRulesCollection() {
         let dashMetrics = DashMetrics(context).getInstance();
         let mediaPlayerModel = MediaPlayerModel(context).getInstance();
 
-        if (mediaPlayerModel.getBufferOccupancyABREnabled()) {
+        if (!isWebOS && mediaPlayerModel.getBufferOccupancyABREnabled()) {
             qualitySwitchRules.push(
                 BolaRule(context).create({
                     metricsModel: metricsModel,
@@ -79,12 +80,16 @@ function ABRRulesCollection() {
                 })
             );
 
-            qualitySwitchRules.push(
-                BufferOccupancyRule(context).create({
-                    metricsModel: metricsModel,
-                    dashMetrics: dashMetrics
-                })
-            );
+            // disable BufferOccupancy rule for webOS as it not always is able
+            // to play topmost quality
+            if (!isWebOS) {
+                qualitySwitchRules.push(
+                    BufferOccupancyRule(context).create({
+                        metricsModel: metricsModel,
+                        dashMetrics: dashMetrics
+                    })
+                );
+            }
 
             qualitySwitchRules.push(InsufficientBufferRule(context).create({metricsModel: metricsModel}));
             abandonFragmentRules.push(AbandonRequestsRule(context).create());

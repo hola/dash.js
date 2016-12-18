@@ -71,9 +71,11 @@ function XHRLoader(cfg) {
     function internalLoad(config, remainingAttempts) {
 
         var request = config.request;
-        var xhr = ['audio', 'video', 'muxed'].includes(request.mediaType) && window.hola_cdn &&
-            window.hola_cdn.api && window.hola_cdn.api.new_http_request &&
-            window.hola_cdn.api.new_http_request(request) || new XMLHttpRequest();
+        var xhr = ['audio', 'video', 'muxed'].indexOf(request.mediaType) > -1 &&
+            window.hola_cdn && window.hola_cdn.api &&
+            window.hola_cdn.api.new_http_request &&
+            window.hola_cdn.api.new_http_request(request) ||
+            new XMLHttpRequest();
         var traces = [];
         var firstProgress = true;
         var needFailureReport = true;

@@ -9080,7 +9080,7 @@ var _dashUtilsTimelineConverterJs2 = _interopRequireDefault(_dashUtilsTimelineCo
  */
 function MediaPlayer() {
 
-    var VERSION = '2.1.0';
+    var VERSION = '2.1.0-1';
     var PLAYBACK_NOT_INITIALIZED_ERROR = 'You must first call play() to init playback before calling this method';
     var ELEMENT_NOT_ATTACHED_ERROR = 'You must first call attachView() to set the video element before calling this method';
     var SOURCE_NOT_ATTACHED_ERROR = 'You must first call attachSource() with a valid source before calling this method';
@@ -14271,7 +14271,7 @@ function XHRLoader(cfg) {
     function internalLoad(config, remainingAttempts) {
 
         var request = config.request;
-        var xhr = ['audio', 'video', 'muxed'].includes(request.mediaType) && window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.new_http_request && window.hola_cdn.api.new_http_request(request) || new XMLHttpRequest();
+        var xhr = ['audio', 'video', 'muxed'].indexOf(request.mediaType) > -1 && window.hola_cdn && window.hola_cdn.api && window.hola_cdn.api.new_http_request && window.hola_cdn.api.new_http_request(request) || new XMLHttpRequest();
         var traces = [];
         var firstProgress = true;
         var needFailureReport = true;
@@ -21159,10 +21159,10 @@ var DEFAULT_LOCAL_STORAGE_MEDIA_SETTINGS_EXPIRATION = 360000;
 var BANDWIDTH_SAFETY_FACTOR = 0.9;
 var ABANDON_LOAD_TIMEOUT = 10000;
 
-var BUFFER_TO_KEEP = 30;
+var BUFFER_TO_KEEP = 40;
 var BUFFER_PRUNING_INTERVAL = 30;
-var DEFAULT_MIN_BUFFER_TIME = 12;
-var BUFFER_TIME_AT_TOP_QUALITY = 30;
+var DEFAULT_MIN_BUFFER_TIME = 40;
+var BUFFER_TIME_AT_TOP_QUALITY = 40;
 var BUFFER_TIME_AT_TOP_QUALITY_LONG_FORM = 60;
 var LONG_FORM_CONTENT_DURATION_THRESHOLD = 600;
 var RICH_BUFFER_THRESHOLD = 20;
@@ -21171,7 +21171,7 @@ var FRAGMENT_RETRY_ATTEMPTS = 3;
 var FRAGMENT_RETRY_INTERVAL = 1000;
 
 var MANIFEST_RETRY_ATTEMPTS = 3;
-var MANIFEST_RETRY_INTERVAL = 500;
+var MANIFEST_RETRY_INTERVAL = 1000;
 
 var XLINK_RETRY_ATTEMPTS = 1;
 var XLINK_RETRY_INTERVAL = 500;
@@ -22765,6 +22765,7 @@ var ABANDON_FRAGMENT_RULES = 'abandonFragmentRules';
 function ABRRulesCollection() {
 
     var context = this.context;
+    var isWebOS = !!window.PalmSystem;
 
     var instance = undefined,
         qualitySwitchRules = undefined,
@@ -22778,7 +22779,7 @@ function ABRRulesCollection() {
         var dashMetrics = (0, _dashDashMetricsJs2['default'])(context).getInstance();
         var mediaPlayerModel = (0, _modelsMediaPlayerModelJs2['default'])(context).getInstance();
 
-        if (mediaPlayerModel.getBufferOccupancyABREnabled()) {
+        if (!isWebOS && mediaPlayerModel.getBufferOccupancyABREnabled()) {
             qualitySwitchRules.push((0, _BolaRuleJs2['default'])(context).create({
                 metricsModel: metricsModel,
                 dashMetrics: (0, _dashDashMetricsJs2['default'])(context).getInstance()
@@ -22793,10 +22794,14 @@ function ABRRulesCollection() {
                 dashMetrics: dashMetrics
             }));
 
-            qualitySwitchRules.push((0, _BufferOccupancyRuleJs2['default'])(context).create({
-                metricsModel: metricsModel,
-                dashMetrics: dashMetrics
-            }));
+            // disable BufferOccupancy rule for webOS as it not always is able
+            // to play topmost quality
+            if (!isWebOS) {
+                qualitySwitchRules.push((0, _BufferOccupancyRuleJs2['default'])(context).create({
+                    metricsModel: metricsModel,
+                    dashMetrics: dashMetrics
+                }));
+            }
 
             qualitySwitchRules.push((0, _InsufficientBufferRuleJs2['default'])(context).create({ metricsModel: metricsModel }));
             abandonFragmentRules.push((0, _AbandonRequestsRuleJs2['default'])(context).create());
@@ -24167,14 +24172,26 @@ function ThroughputRule(config) {
     var log = (0, _coreDebugJs2['default'])(context).getInstance().log;
     var dashMetrics = config.dashMetrics;
     var metricsModel = config.metricsModel;
+    var isWebOS = !!window.PalmSystem;
 
     var instance = undefined,
         throughputArray = undefined,
+        videoLimit = undefined,
         mediaPlayerModel = undefined;
 
     function setup() {
         throughputArray = [];
         mediaPlayerModel = (0, _modelsMediaPlayerModelJs2['default'])(context).getInstance();
+        if (isWebOS) {
+            var devInfo = JSON.parse(window.PalmSystem.deviceInfo);
+            if (devInfo.screenWidth < 1920) {
+                videoLimit = { width: 1280, height: 720 };
+            } else if (devInfo.screenWidth < 3840) {
+                videoLimit = { width: 1920, height: 1080 };
+            } else {
+                videoLimit = { width: 3840, height: 2160 };
+            }
+        }
     }
 
     function storeLastRequestThroughputByType(type, lastRequestThroughput) {
@@ -24251,6 +24268,12 @@ function ThroughputRule(config) {
 
             if (bufferStateVO.state === _controllersBufferControllerJs2['default'].BUFFER_LOADED || isDynamic) {
                 var newQuality = abrController.getQualityForBitrate(mediaInfo, averageThroughput);
+                if (mediaType === 'video' && isWebOS) {
+                    var bitrateList = abrController.getBitrateList(mediaInfo);
+                    while (newQuality && (bitrateList[newQuality].height > videoLimit.height || bitrateList[newQuality].width > videoLimit.width)) {
+                        newQuality--;
+                    }
+                }
                 streamProcessor.getScheduleController().setTimeToLoadDelay(0); // TODO Watch out for seek event - no delay when seeking.!!
                 switchRequest = (0, _SwitchRequestJs2['default'])(context).create(newQuality, _SwitchRequestJs2['default'].DEFAULT);
             }

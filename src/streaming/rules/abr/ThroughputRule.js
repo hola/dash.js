@@ -45,14 +45,26 @@ function ThroughputRule(config) {
     let log = Debug(context).getInstance().log;
     let dashMetrics = config.dashMetrics;
     let metricsModel = config.metricsModel;
+    let isWebOS = !!window.PalmSystem;
 
     let instance,
         throughputArray,
+        videoLimit,
         mediaPlayerModel;
 
     function setup() {
         throughputArray = [];
         mediaPlayerModel = MediaPlayerModel(context).getInstance();
+        if (isWebOS) {
+            let devInfo = JSON.parse(window.PalmSystem.deviceInfo);
+            if (devInfo.screenWidth < 1920) {
+                videoLimit = {width: 1280, height: 720};
+            } else if (devInfo.screenWidth < 3840) {
+                videoLimit = {width: 1920, height: 1080};
+            } else {
+                videoLimit = {width: 3840, height: 2160};
+            }
+        }
     }
 
     function storeLastRequestThroughputByType(type, lastRequestThroughput) {
@@ -132,6 +144,12 @@ function ThroughputRule(config) {
 
             if (bufferStateVO.state === BufferController.BUFFER_LOADED || isDynamic) {
                 var newQuality = abrController.getQualityForBitrate(mediaInfo, averageThroughput);
+                if (mediaType === 'video' && isWebOS) {
+                    let bitrateList = abrController.getBitrateList(mediaInfo);
+                    while (newQuality && (bitrateList[newQuality].height > videoLimit.height || bitrateList[newQuality].width > videoLimit.width)) {
+                        newQuality--;
+                    }
+                }
                 streamProcessor.getScheduleController().setTimeToLoadDelay(0); // TODO Watch out for seek event - no delay when seeking.!!
                 switchRequest = SwitchRequest(context).create(newQuality, SwitchRequest.DEFAULT);
             }
