@@ -89,7 +89,8 @@ function BufferController(config) {
         fragmentController,
         scheduleController,
         mediaPlayerModel,
-        clearBufferTimeout;
+        clearBufferTimeout,
+        extraData;
 
     function setup() {
         requiredQuality = -1;
@@ -181,6 +182,10 @@ function BufferController(config) {
         // cache the initialization data to use it next time the quality has changed
         virtualBuffer.append(chunk);
         switchInitData(getStreamId(),  requiredQuality);
+
+        if (chunk.mediaInfo.type === 'video') {
+            extraData = BoxParser(context).getInstance().avccExtraData(chunk.bytes);
+        }
     }
 
     function onMediaFragmentLoaded(e) {
@@ -200,6 +205,11 @@ function BufferController(config) {
         if (eventStreamMedia.length > 0 || eventStreamTrack.length > 0) {
             events = handleInbandEvents(bytes, request, eventStreamMedia, eventStreamTrack);
             streamProcessor.getEventController().addInbandEvents(events);
+        }
+
+        if (mediaController.getInitialSettings('checkEncoding') && request.mediaType === 'video') {
+            var samples = BoxParser(context).getInstance().getSyncSamples(extraData, bytes);
+            eventBus.trigger(Events.SEGMENT_SYNC_SAMPLES, {index: index, quality: quality, samples: samples});
         }
 
         chunk.bytes = deleteInbandEvents(bytes);

@@ -644,6 +644,7 @@ var MediaPlayerEvents = (function (_EventsBase) {
      * @event MediaPlayerEvents#PLAYBACK_TIME_UPDATED
      */
     this.PLAYBACK_TIME_UPDATED = 'playbackTimeUpdated';
+    this.SEGMENT_SYNC_SAMPLES = 'segmentSyncSamples';
   }
 
   return MediaPlayerEvents;

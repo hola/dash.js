@@ -39,6 +39,7 @@ function IsoFile() {
         commonProps,
         sidxProps,
         sidxRefProps,
+        stsdProps,
         emsgProps,
         mdhdProps,
         mfhdProps,
@@ -128,6 +129,11 @@ function IsoFile() {
             subsegment_duration: 'subsegment_duration'
         };
 
+        stsdProps = {
+            entries: 'entries',
+            entry_count: 'entry_count',
+        };
+
         emsgProps = {
             id: 'id',
             value: 'value',
@@ -203,6 +209,9 @@ function IsoFile() {
                         copyProps(boxData.references[i], box.references[i], sidxRefProps);
                     }
                 }
+                break;
+            case 'stsd':
+                copyProps(boxData, box, stsdProps);
                 break;
             case 'emsg':
                 copyProps(boxData, box, emsgProps);
