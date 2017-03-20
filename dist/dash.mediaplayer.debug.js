@@ -17121,7 +17121,7 @@ function MediaController() {
      * @memberof MediaController#
      */
     function setInitialSettings(type, value) {
-        if (!type || !value) return;
+        if (!type || value === undefined) return;
 
         initialSettings[type] = value;
     }
