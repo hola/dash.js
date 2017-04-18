@@ -16255,7 +16255,7 @@ function BufferController(config) {
             streamProcessor.getEventController().addInbandEvents(events);
         }
 
-        if (mediaController.getInitialSettings('checkEncoding') && request.mediaType === 'video') {
+        if (!mediaController.getInitialSettings('disEncodingCheck') && request.mediaType === 'video') {
             var samples = (0, _utilsBoxParserJs2['default'])(context).getInstance().getSyncSamples(extraData, bytes);
             eventBus.trigger(_coreEventsEventsJs2['default'].SEGMENT_SYNC_SAMPLES, { index: index, quality: quality, samples: samples });
         }
